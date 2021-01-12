@@ -1,47 +1,21 @@
-# Python CircleCI 2.1 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-python/ for more details
-#
 version: 2.1
+
 orbs:
-  codecov: codecov/codecov@1.0.4
+  python: circleci/python@0.2.1
+
 jobs:
-  build:
-    docker:
-      - image: circleci/python:3.7.9
-    working_directory: ~/repo
+  build-and-test:
+    executor: python/default
     steps:
       - checkout
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "requirements.txt" }}
-            # Fall back to using the latest cache if no exact match is found
-            - v1-dependencies-
-
+      - python/load-cache
+      - python/install-deps
+      - python/save-cache
       - run:
-          name: install dependencies
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-            sudo apt update
-            sudo apt install software-properties-common
-            sudo add-apt-repository -y ppa:jonathonf/ffmpeg-4
-            sudo apt install ffmpeg
+          command: ./manage.py test
+          name: Test
 
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
-
-      # Run tests and measure code coverage
-      - run:
-          name: run tests
-          command: |
-            . venv/bin/activate
-            pytest
-
-      - codecov/upload:
-          file: coverage.xml
+workflows:
+  main:
+    jobs:
+      - build-and-test
